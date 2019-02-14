@@ -1,0 +1,234 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>五子棋</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <style type="text/css">
+        .chess-total {
+            position: absolute;
+            left: 450;
+            top: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <div class="chess-total">
+        <h4>白：<span id="white"></span></h4>
+        <h4>黑：<span id="black"></span></h4>
+        <button onclick="clearCanvas()">再来一次</button>
+    </div>
+    <script>
+        let whiteTotal = 0; // 白棋个数
+        let blackTotal = 0; // 黑棋个数
+        // 棋子类型
+        let chessType;
+        // 定义用于判断落子的二维数组
+        let matrix;
+        // 是否可以绘制落子
+        let state = true;
+        // 绘制画布
+        let newCanvas = function() {
+            let canvas = document.getElementById("canvas");
+            let context = canvas.getContext("2d");
+            context.beginPath();
+            for (let i = 0; i < 19; i++) {
+                // 竖线绘制
+                context.moveTo(10 + i * 20, 10);
+                context.lineTo(10 + i * 20, 370);
+                // 横线绘制
+                context.moveTo(10, 10 + i * 20);
+                context.lineTo(370, 10 + i * 20);
+            }
+            context.stroke();
+            //
+            whiteTotal = 0; // 白棋个数
+            blackTotal = 0; // 黑棋个数
+            $('#white').html(whiteTotal);
+            $('#black').html(blackTotal);
+            // 是否可以绘制落子
+            state = true;
+            // 棋子类型
+            chessType = 0;
+            // 定义用于判断落子的二维数组
+            matrix = new Array(19);
+            // 进行赋值
+            for (let i = 0; i < 19; i++) {
+                matrix[i] = new Array(19);
+                for (let j = 0; j < 19; j++) {
+                    matrix[i][j] = 0;
+                }
+            }
+        }
+        newCanvas();
+        // 清空画布
+        function clearCanvas() {
+            var c = document.getElementById("canvas");
+            var cxt = c.getContext("2d");
+            c.height = c.height;
+            // 重置画布
+            newCanvas();
+        }
+        // 绘制落子
+        $("#canvas").click((event) => {
+            // 判断棋盘是否能绘制棋子
+            if (!state) return;
+            // 每次落子的时候取反
+            chessType = !chessType;
+            // console.log(event.offsetX);
+            let canvas = document.getElementById("canvas");
+            let context = canvas.getContext("2d");
+            // 保存要落子的坐标
+            let arcPosX, arcPosY;
+            // 保存棋子在数组中的位置
+            let mtxPosX, mtxPosY;
+            // 和每一条线进行比较，如果相差10个像素以内，即，靠近
+            for (let x = 0; x < 19; x++) {
+                if (Math.abs(event.offsetX - (10 + x * 20)) < 10) {
+                    // 获得需要落子的x
+                    arcPosX = 10 + x * 20;
+                    mtxPosX = x;
+                }
+                if (Math.abs(event.offsetY - (10 + x * 20)) < 10) {
+                    // 获得需要落子的y
+                    arcPosY = 10 + x * 20;
+                    mtxPosY = x;
+                }
+            }
+            // 无法获取 x y
+            if (mtxPosX === undefined || mtxPosY === undefined) {
+                chessType = !chessType;
+                return;
+            }
+            // 画出棋子
+            // 落子为空，进行绘制，反之不绘制,并还原落子类型
+            if (matrix[mtxPosX][mtxPosY] === 0) {
+                context.beginPath();
+                if (chessType) {
+                    context.fillStyle = "white";
+                    context.arc(arcPosX, arcPosY, 10, 0, Math.PI * 2, false);
+                    context.stroke();
+                    // 白子为1
+                    matrix[mtxPosX][mtxPosY] = 1;
+                    whiteTotal++;
+                    $('#white').html(whiteTotal);
+                } else {
+                    context.fillStyle = "black";
+                    context.arc(arcPosX, arcPosY, 10, 0, Math.PI * 2, false);
+                    // 黑子为2
+                    matrix[mtxPosX][mtxPosY] = 2;
+                    blackTotal++;
+                    $('#black').html(blackTotal);
+                }
+                context.fill();
+            } else {
+                chessType = !chessType;
+            }
+            // 获胜检测
+            // console.log(mtxPosX, mtxPosY);
+            let isMtxPos = function(mtxPosX, mtxPosY) {
+                let mtxPos = matrix[mtxPosX][mtxPosY];
+                // 排除没有落子的点
+                if (mtxPos === 0) return;
+                // 横向
+                let a = 0;
+                let b = 0;
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosX - n > -1 && matrix[mtxPosX - n][mtxPosY] === mtxPos) {
+                        a++;
+                    } else {
+                        break;
+                    }
+                }
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosX + n < 19 && matrix[mtxPosX + n][mtxPosY] === mtxPos) {
+                        b++;
+                    } else {
+                        break;
+                    }
+                }
+                let boolean1 = (a + b) > 3;
+                // 竖向
+                let c = 0;
+                let d = 0;
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosY - n > -1 && matrix[mtxPosX][mtxPosY - n] === mtxPos) {
+                        c++;
+                    } else {
+                        break;
+                    }
+                }
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosY + n < 19 && matrix[mtxPosX][mtxPosY + n] === mtxPos) {
+                        d++;
+                    } else {
+                        break;
+                    }
+                }
+                let boolean2 = (c + d) > 3;
+                // 右斜
+                let e = 0;
+                let f = 0;
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosX + n < 19 && mtxPosY + n < 19 && matrix[mtxPosX + n][mtxPosY + n] === mtxPos) {
+                        e++;
+                    } else {
+                        break;
+                    }
+                }
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosX - n > -1 && mtxPosY - n > -1 && matrix[mtxPosX - n][mtxPosY - n] === mtxPos) {
+                        f++;
+                    } else {
+                        break;
+                    }
+                }
+                let boolean3 = (e + f) > 3;
+                // 左斜
+                let g = 0;
+                let h = 0;
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosX + n < 19 && mtxPosY - n > -1 && matrix[mtxPosX + n][mtxPosY - n] === mtxPos) {
+                        g++;
+                    } else {
+                        break;
+                    }
+                }
+                for (let n = 1; n < 5; n++) {
+                    if (mtxPosX - n > -1 && mtxPosY + n < 19 && matrix[mtxPosX - n][mtxPosY + n] === mtxPos) {
+                        h++;
+                    } else {
+                        break;
+                    }
+                }
+                let boolean4 = (g + h) > 3;
+                // console.log(mtxPosX, mtxPosY);
+                // console.log(boolean1, boolean2, boolean3, boolean4);
+                if (boolean1 || boolean2 || boolean3 || boolean4) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            if (isMtxPos(mtxPosX, mtxPosY)) {
+                if (matrix[mtxPosX][mtxPosY] == 1) {
+                    setTimeout(() => {
+                        alert("白方获胜");
+                    }, 100);
+                } else {
+                    setTimeout(() => {
+                        alert("黑方获胜");
+                    }, 100);
+                }
+                // 不能绘制落子
+                state = false;
+            }
+        })
+    </script>
+</body>
+
+</html>
